@@ -1,0 +1,209 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="description" content="Rooftop Snipers - Jogo de tiro multiplayer épico no estilo Smash Bros!">
+    <title>🎯 Rooftop Snipers - Smash Edition</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&family=Orbitron:wght@400;700;900&display=swap"
+        rel="stylesheet">
+    <link rel="stylesheet" href="css/styles.css">
+    <link rel="icon" type="image/svg+xml"
+        href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🎯</text></svg>">
+</head>
+
+<body>
+    <!-- Preloader -->
+    <div id="preloader">
+        <div class="loader-content">
+            <div class="loader-icon">🎯</div>
+            <div class="loader-text">CARREGANDO...</div>
+            <div class="loader-bar">
+                <div class="loader-progress"></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Score Board -->
+    <div class="score-board" id="scoreboard">
+        <div class="score-container p1">
+            <div class="player-indicator">P1</div>
+            <div class="score-value" id="p1-score">0</div>
+            <div class="score-stars" id="p1-stars"></div>
+        </div>
+        <div class="round-indicator">
+            <span id="round-text">ROUND 1</span>
+        </div>
+        <div class="score-container p2">
+            <div class="player-indicator">P2</div>
+            <div class="score-value" id="p2-score">0</div>
+            <div class="score-stars" id="p2-stars"></div>
+        </div>
+    </div>
+
+    <!-- Game Canvas -->
+    <canvas id="gameCanvas"></canvas>
+
+    <!-- UI Layer -->
+    <div id="ui-layer">
+        <!-- Main Menu -->
+        <div id="menu" class="menu-container">
+            <div class="menu-background"></div>
+            <div class="menu-content">
+                <div class="logo-container">
+                    <h1 class="title">
+                        <span class="title-line">ROOFTOP</span>
+                        <span class="title-line accent">SNIPERS</span>
+                    </h1>
+                    <div class="subtitle-badge">SMASH EDITION</div>
+                </div>
+
+                <div class="controls-panel">
+                    <div class="control-section">
+                        <div class="player-tag p1-tag">JOGADOR 1</div>
+                        <div class="control-keys">
+                            <span class="key">W</span><span class="key">A</span><span class="key">S</span><span
+                                class="key">D</span> Mover
+                            <br>
+                            <span class="key mouse">🖱️</span> Mirar & Atirar
+                        </div>
+                    </div>
+                    <div class="control-divider">VS</div>
+                    <div class="control-section">
+                        <div class="player-tag p2-tag">JOGADOR 2</div>
+                        <div class="control-keys">
+                            <span class="key">↑</span><span class="key">←</span><span class="key">↓</span><span
+                                class="key">→</span> Mover
+                            <br>
+                            <span class="key">.</span> Pular <span class="key">/</span> Atirar
+                        </div>
+                    </div>
+                </div>
+
+                <div class="menu-buttons">
+                    <button class="btn btn-primary" id="btn-1player">
+                        <span class="btn-icon">🤖</span>
+                        <span class="btn-text">1 JOGADOR</span>
+                        <span class="btn-sub">vs CPU</span>
+                    </button>
+                    <button class="btn btn-secondary" id="btn-2players">
+                        <span class="btn-icon">👥</span>
+                        <span class="btn-text">2 JOGADORES</span>
+                        <span class="btn-sub">Local</span>
+                    </button>
+                </div>
+
+                <div class="menu-footer">
+                    <button class="btn-settings" id="btn-settings">⚙️ Configurações</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Settings Modal -->
+        <div id="settings-modal" class="modal hidden">
+            <div class="modal-content">
+                <h2 class="modal-title">⚙️ CONFIGURAÇÕES</h2>
+                <div class="settings-group">
+                    <label>Volume Música</label>
+                    <input type="range" id="music-volume" min="0" max="100" value="50">
+                </div>
+                <div class="settings-group">
+                    <label>Volume Efeitos</label>
+                    <input type="range" id="sfx-volume" min="0" max="100" value="80">
+                </div>
+                <div class="settings-group">
+                    <label>Pontos para Vitória</label>
+                    <select id="win-score">
+                        <option value="3">3 Pontos</option>
+                        <option value="5" selected>5 Pontos</option>
+                        <option value="7">7 Pontos</option>
+                        <option value="10">10 Pontos</option>
+                    </select>
+                </div>
+                <div class="settings-group">
+                    <label>Dificuldade CPU</label>
+                    <select id="cpu-difficulty">
+                        <option value="easy">Fácil</option>
+                        <option value="medium" selected>Médio</option>
+                        <option value="hard">Difícil</option>
+                        <option value="insane">Insano</option>
+                    </select>
+                </div>
+                <div class="settings-group">
+                    <label>
+                        <input type="checkbox" id="screen-shake" checked>
+                        Tremor de Tela
+                    </label>
+                </div>
+                <div class="settings-group">
+                    <label>
+                        <input type="checkbox" id="particles-enabled" checked>
+                        Partículas
+                    </label>
+                </div>
+                <button class="btn btn-primary" id="btn-close-settings">FECHAR</button>
+            </div>
+        </div>
+
+        <!-- Countdown -->
+        <div id="countdown" class="hidden">
+            <span id="countdown-number">3</span>
+        </div>
+
+        <!-- Game Over Screen -->
+        <div id="game-over" class="hidden">
+            <div class="game-over-content">
+                <div class="trophy">🏆</div>
+                <h1 class="winner-text" id="winner-text">JOGADOR 1 VENCEU!</h1>
+                <div class="final-score" id="final-score">5 - 3</div>
+                <div class="game-over-buttons">
+                    <button class="btn btn-primary" id="btn-rematch">
+                        <span class="btn-icon">🔄</span>
+                        <span class="btn-text">REVANCHE</span>
+                    </button>
+                    <button class="btn btn-secondary" id="btn-menu">
+                        <span class="btn-icon">🏠</span>
+                        <span class="btn-text">MENU</span>
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Pause Menu -->
+        <div id="pause-menu" class="hidden">
+            <div class="pause-content">
+                <h2>⏸️ PAUSADO</h2>
+                <button class="btn btn-primary" id="btn-resume">CONTINUAR</button>
+                <button class="btn btn-secondary" id="btn-quit">SAIR</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Controls Hint -->
+    <div class="controls-hint" id="hints">
+        <span>ESC pausar</span>
+        <span>•</span>
+        <span>ESPAÇO slide</span>
+        <span>•</span>
+        <span>🖱️ Direito = Especial</span>
+        <span>•</span>
+        <span>🎯 Headshot = 2x!</span>
+    </div>
+
+    <!-- Kill Feed -->
+    <div id="kill-feed"></div>
+
+    <!-- Scripts -->
+    <script src="js/audio.js"></script>
+    <script src="js/particle.js"></script>
+    <script src="js/heroes.js"></script>
+    <script src="js/player.js"></script>
+    <script src="js/bullet.js"></script>
+    <script src="js/game.js"></script>
+    <script src="js/main.js"></script>
+</body>
+
+</html>
