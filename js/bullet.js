@@ -79,7 +79,7 @@ class Bullet {
         // Colisão com jogadores (headshot!)
         const hitResult = this.checkPlayerCollision(players);
         if (hitResult) {
-            this.active = false;
+            this.active = false; // Garante desativação imediata
 
             if (this.explosive) {
                 this.explode(players);

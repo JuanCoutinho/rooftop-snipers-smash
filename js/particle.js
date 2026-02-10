@@ -217,8 +217,11 @@ class ParticleSystem {
         if (!this.enabled) return;
         if (this.particles.length > this.maxParticles) return;
 
+        // Rate limit simples para evitar spam de hit particles no mesmo lugar
+        if (Math.random() < 0.5) return; // 50% de chance de pular se for spam
+
         // Partículas de sangue/impacto
-        for (let i = 0; i < 10; i++) { // Reduzi de 15 para 10
+        for (let i = 0; i < 8; i++) { // Reduzi mais um pouco para garantir performance
             const angle = Math.random() * Math.PI * 2;
             const speed = Math.random() * 12 + 5;
             this.particles.push(this.getParticle(x, y, {

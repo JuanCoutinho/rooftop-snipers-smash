@@ -422,6 +422,16 @@ const Game = {
             this.startGame(true);
         });
 
+        document.getElementById('btn-battle-royale')?.addEventListener('click', () => {
+            Audio.playClick();
+            this.startBattleRoyaleSetup();
+        });
+
+        document.getElementById('btn-tournament')?.addEventListener('click', () => {
+            Audio.playClick();
+            this.startTournamentSetup();
+        });
+
         document.getElementById('btn-settings')?.addEventListener('click', () => {
             Audio.playClick();
             document.getElementById('settings-modal').classList.remove('hidden');
@@ -494,6 +504,69 @@ const Game = {
         document.getElementById('select-player-indicator').className = 'select-player p1';
         document.querySelectorAll('.char-card').forEach(c => c.classList.remove('selected'));
         document.getElementById('character-select').classList.remove('hidden');
+    },
+
+    startBattleRoyaleSetup() {
+        this.gameMode = 'BATTLE_ROYALE';
+        this.isTwoPlayer = false; // Player vs 19 bots
+        document.getElementById('menu').classList.add('hidden');
+        this.state = 'CHARACTER_SELECT';
+        this.selectPlayer = 0;
+        document.getElementById('select-player-indicator').textContent = 'SEU PERSONAGEM';
+        document.getElementById('select-player-indicator').className = 'select-player p1';
+        document.getElementById('character-select').classList.remove('hidden');
+    },
+
+    startBattleRoyale() {
+        this.state = 'COUNTDOWN';
+        this.generateLevel(); // Gera nível gigante
+
+        document.getElementById('scoreboard').classList.remove('visible');
+        document.getElementById('hints').classList.add('visible');
+
+        // Custom UI para BR (Contador de vivos)
+        const aliveCount = document.getElementById('round-text');
+        aliveCount.textContent = "ALIVE: 20";
+        document.getElementById('scoreboard').classList.add('visible');
+        document.getElementById('p1-score').textContent = '';
+        document.getElementById('p2-score').textContent = '';
+
+        this.startCountdown(true);
+    },
+
+    startTournamentSetup() {
+        this.gameMode = 'TOURNAMENT';
+        this.isTwoPlayer = false;
+        document.getElementById('menu').classList.add('hidden');
+        this.state = 'CHARACTER_SELECT';
+        this.selectPlayer = 0;
+        document.getElementById('select-player-indicator').textContent = 'SEU PERSONAGEM';
+        document.getElementById('select-player-indicator').className = 'select-player p1';
+        document.getElementById('character-select').classList.remove('hidden');
+    },
+
+    startTournament() {
+        // Inicializa torneio
+        this.tournamentRound = 1;
+        this.scores = { p1: 0, p2: 0 };
+        this.startTournamentMatch();
+    },
+
+    startTournamentMatch() {
+        // Gera oponente aleatório
+        const allChars = [...HeroList, ...WeaponList];
+        const randomOpponent = allChars[Math.floor(Math.random() * allChars.length)];
+
+        this.selectedCharacters.p2 = { char: randomOpponent, type: 'hero' };
+
+        this.state = 'COUNTDOWN';
+        this.generateLevel(); // Aplica chars
+
+        const roundNames = ['QUARTAS', 'SEMI-FINAL', 'FINAL'];
+        document.getElementById('round-text').textContent = roundNames[this.tournamentRound - 1] || 'FINAL';
+
+        this.updateScoreUI();
+        this.startCountdown(true);
     },
 
     startCountdown() {
@@ -660,6 +733,21 @@ const Game = {
     update() {
         this.backgroundManager.update();
 
+        // Battle Royale Zone Logic
+        if (this.gameMode === 'BATTLE_ROYALE' && this.state === 'PLAYING') {
+            // Paredes se fecham lentamente
+            this.walls[0].x += 0.3;
+            this.walls[1].x -= 0.3;
+
+            // Dano fora da zona
+            this.players.forEach(p => {
+                if (!p.dead && (p.x < this.walls[0].x || p.x > this.walls[1].x)) {
+                    p.damage += 0.1;
+                    if (Math.random() < 0.1) p.hit(0, -5, 1, false); // Empurrãozinho
+                }
+            });
+        }
+
         // Atualizar jogadores
         this.players.forEach(player => {
             player.update(this.keys, this.mouse, this.island, this.walls, this.camera, this.gravity);
@@ -677,13 +765,17 @@ const Game = {
         });
 
         // AI
-        if (!this.isTwoPlayer && this.players[1] && !this.players[1].dead) {
-            const aiBullets = this.players[1].updateAI(this.keys, this.island, this.walls);
-            if (aiBullets && aiBullets.length > 0) {
-                this.bulletManager.add(aiBullets);
-                this.camera.shake = 5;
+        this.players.forEach(p => {
+            if (p.isAI && !p.dead) {
+                const aiBullets = p.updateAI(this.keys, this.island, this.walls);
+                if (aiBullets && aiBullets.length > 0) {
+                    this.bulletManager.add(aiBullets);
+                    // Menos shake para bots distantes
+                    const distToP1 = Math.abs(p.x - this.players[0].x);
+                    if (distToP1 < 800) this.camera.shake = 3;
+                }
             }
-        }
+        });
 
         // Balas
         const bulletResults = this.bulletManager.update(this.players, this.island, this.walls);
@@ -717,16 +809,34 @@ const Game = {
     },
 
     updateCamera() {
-        if (this.players.length < 2) return;
+        if (this.players.length === 0) return;
 
-        const p1 = this.players[0];
-        const p2 = this.players[1];
+        let targetX, targetY, targetZ;
 
-        let midX = (p1.x + p2.x) / 2;
-        let midY = (p1.y + p2.y) / 2;
+        if (this.gameMode === 'BATTLE_ROYALE') {
+            const p1 = this.players[0];
+            // Se P1 morreu, segue quem o matou ou aleatório (simplificado: segue o primeiro vivo)
+            const target = !p1.dead ? p1 : this.players.find(p => !p.dead) || p1;
 
-        const dist = Math.abs(p1.x - p2.x);
-        const targetZ = Math.min(1.0, Math.max(0.35, this.canvas.width / (dist + 700)));
+            targetX = target.x;
+            targetY = target.y;
+            targetZ = 0.8; // Zoom mais fixo no BR
+        } else {
+            // Modo Normal/Tournament (foca em 2 players)
+            const p1 = this.players[0];
+            const p2 = this.players[1];
+            if (p2) {
+                targetX = (p1.x + p2.x) / 2;
+                targetY = (p1.y + p2.y) / 2;
+                const dist = Math.abs(p1.x - p2.x);
+                targetZ = Math.min(1.0, Math.max(0.35, this.canvas.width / (dist + 700)));
+            } else {
+                targetX = p1.x;
+                targetY = p1.y;
+                targetZ = 1;
+            }
+        }
+
         this.camera.targetZoom += (targetZ - this.camera.targetZoom) * 0.04;
         this.camera.zoom = this.camera.targetZoom;
 
@@ -735,8 +845,8 @@ const Game = {
             if (this.camera.shake < 0.5) this.camera.shake = 0;
         }
 
-        this.camera.offsetX = this.canvas.width / 2 - midX * this.camera.zoom;
-        this.camera.offsetY = this.canvas.height / 2 - midY * this.camera.zoom + 60;
+        this.camera.offsetX = this.canvas.width / 2 - targetX * this.camera.zoom;
+        this.camera.offsetY = this.canvas.height / 2 - targetY * this.camera.zoom + 60;
 
         if (this.settings.screenShake && this.camera.shake > 0) {
             this.camera.offsetX += (Math.random() - 0.5) * this.camera.shake;
@@ -745,6 +855,24 @@ const Game = {
     },
 
     onPlayerDeath(player) {
+        // Lógica diferente para BR
+        if (this.gameMode === 'BATTLE_ROYALE') {
+            this.addKillFeed(-1, player.id, `Player ${player.id} eliminado!`);
+
+            const alive = this.players.filter(p => !p.dead).length;
+            document.getElementById('round-text').textContent = `ALIVE: ${alive}`;
+
+            if (alive <= 1) {
+                const winner = this.players.find(p => !p.dead);
+                setTimeout(() => this.endBattleRoyale(winner), 1500);
+            } else if (player.id === 0) {
+                // P1 morreu
+                this.addKillFeed(-1, -1, "VOCÊ MORREU!");
+                // Espectador mode implícito (camera switch)
+            }
+            return;
+        }
+
         const winnerId = player.id === 0 ? 1 : 0;
         const winnerKey = winnerId === 0 ? 'p1' : 'p2';
 
@@ -764,6 +892,17 @@ const Game = {
                 }
             }, 2000);
         }
+    },
+
+    endBattleRoyale(winner) {
+        this.state = 'GAMEOVER';
+        Audio.playWin();
+        Particles.emitConfetti(this.canvas.width / 2, this.canvas.height / 2, 100);
+
+        const winnerName = winner ? (winner.id === 0 ? 'JOGADOR 1' : `BOT ${winner.id}`) : 'NINGUÉM';
+        document.getElementById('winner-text').innerHTML = `🏆 ${winnerName} VENCEU!`;
+        document.getElementById('final-score').textContent = `Survival Champion`;
+        document.getElementById('game-over').classList.remove('hidden');
     },
 
     endMatch() {
