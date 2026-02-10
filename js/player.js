@@ -292,7 +292,20 @@ class Player {
         this.aiTimer++;
         this.aiShootTimer++;
 
-        const target = Game.players[0];
+        // Encontrar alvo mais próximo
+        let target = null;
+        let minDist = Infinity;
+
+        for (const p of Game.players) {
+            if (p.id !== this.id && !p.dead) {
+                const d = Math.abs(p.x - this.x) + Math.abs(p.y - this.y);
+                if (d < minDist) {
+                    minDist = d;
+                    target = p;
+                }
+            }
+        }
+
         if (!target) return null;
 
         const dx = target.x - this.x;
@@ -396,6 +409,9 @@ class Player {
 
     hit(bulletVx, bulletVy, damage, isHeadshot = false) {
         if (this.dead) return;
+
+        // i-frames para evitar hits múltiplos no mesmo frame ou muito rápidos (ex: omega beams)
+        if (this.hitFlash > 5) return;
 
         let actualDamage = damage;
         if (isHeadshot) {
