@@ -10,6 +10,17 @@ class AudioSystem {
         this.sfxVolume = 0.8;
         this.musicVolume = 0.5;
         this.initialized = false;
+        this.lastPlayTime = {}; // Para throttling
+    }
+
+    // Impede que o mesmo som toque muitas vezes em curto período
+    canPlay(soundId, cooldown = 100) {
+        const now = Date.now();
+        if (this.lastPlayTime[soundId] && now - this.lastPlayTime[soundId] < cooldown) {
+            return false;
+        }
+        this.lastPlayTime[soundId] = now;
+        return true;
     }
 
     init() {
@@ -59,7 +70,7 @@ class AudioSystem {
 
     // Som de tiro - épico e impactante
     playShoot() {
-        if (!this.initialized) return;
+        if (!this.initialized || !this.canPlay('shoot', 80)) return;
         this.resume();
 
         const now = this.ctx.currentTime;
@@ -135,7 +146,7 @@ class AudioSystem {
 
     // Som de hit/impacto
     playHit() {
-        if (!this.initialized) return;
+        if (!this.initialized || !this.canPlay('hit', 100)) return;
         this.resume();
 
         const now = this.ctx.currentTime;

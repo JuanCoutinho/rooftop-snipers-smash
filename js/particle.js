@@ -201,8 +201,11 @@ class ParticleSystem {
     emit(x, y, color, count = 10, options = {}) {
         if (!this.enabled) return;
 
+        // Global Rate Limit
+        if (this.particles.length > this.maxParticles * 0.8 && Math.random() > 0.3) return;
+
         // Limita emissão se já estiver cheio
-        if (this.particles.length > this.maxParticles) count = Math.min(count, 2);
+        if (this.particles.length > this.maxParticles) count = Math.min(count, 1);
 
         for (let i = 0; i < count; i++) {
             this.particles.push(this.getParticle(x, y, {
@@ -217,11 +220,11 @@ class ParticleSystem {
         if (!this.enabled) return;
         if (this.particles.length > this.maxParticles) return;
 
-        // Rate limit simples para evitar spam de hit particles no mesmo lugar
-        if (Math.random() < 0.5) return; // 50% de chance de pular se for spam
+        // Rate limit mais agressivo para hits repetidos
+        if (Math.random() < 0.7) return; // 70% de chance de pular
 
         // Partículas de sangue/impacto
-        for (let i = 0; i < 8; i++) { // Reduzi mais um pouco para garantir performance
+        for (let i = 0; i < 6; i++) { // Reduzi de 8 para 6
             const angle = Math.random() * Math.PI * 2;
             const speed = Math.random() * 12 + 5;
             this.particles.push(this.getParticle(x, y, {

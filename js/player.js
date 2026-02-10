@@ -410,8 +410,8 @@ class Player {
     hit(bulletVx, bulletVy, damage, isHeadshot = false) {
         if (this.dead) return;
 
-        // i-frames para evitar hits múltiplos no mesmo frame ou muito rápidos (ex: omega beams)
-        if (this.hitFlash > 5) return;
+        // i-frames mais longos e estritos
+        if (this.hitFlash > 0) return;
 
         let actualDamage = damage;
         if (isHeadshot) {
@@ -422,7 +422,7 @@ class Player {
         }
 
         Audio.playHit();
-        this.hitFlash = 10;
+        this.hitFlash = 15; // Aumentado tempo de invencibilidade visual e lógica
         this.damage += actualDamage;
 
         // Defesa (Hellbat etc)
