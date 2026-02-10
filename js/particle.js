@@ -136,14 +136,60 @@ class Particle {
 class ParticleSystem {
     constructor() {
         this.particles = [];
+        this.pool = [];
+        this.maxParticles = 500; // Limite máximo
         this.enabled = true;
+    }
+
+    getParticle(x, y, options) {
+        if (this.pool.length > 0) {
+            const p = this.pool.pop();
+            // Reset particle
+            p.x = x;
+            p.y = y;
+            p.vx = options.vx ?? (Math.random() - 0.5) * 10;
+            p.vy = options.vy ?? (Math.random() - 0.5) * 10;
+            p.life = options.life ?? 1.0;
+            p.decay = options.decay ?? 0.02;
+            p.color = options.color ?? '#ffffff';
+            p.size = options.size ?? (Math.random() * 6 + 2);
+            p.gravity = options.gravity ?? 0.2;
+            p.friction = options.friction ?? 0.99;
+            p.rotation = Math.random() * Math.PI * 2;
+            p.rotationSpeed = (Math.random() - 0.5) * 0.3;
+            p.type = options.type ?? 'square';
+            p.trail = options.trail ?? false;
+            p.trailPositions = [];
+            p.glow = options.glow ?? false;
+            return p;
+        }
+        return new Particle(x, y, options);
     }
 
     update() {
         if (!this.enabled) return;
 
-        this.particles = this.particles.filter(p => !p.isDead);
-        this.particles.forEach(p => p.update());
+        let activeCount = 0;
+        for (let i = this.particles.length - 1; i >= 0; i--) {
+            const p = this.particles[i];
+            p.update();
+            if (p.isDead) {
+                this.pool.push(p);
+                this.particles.splice(i, 1);
+            } else {
+                activeCount++;
+            }
+        }
+
+        // Se exceder o limite, remove as mais antigas (começo do array)
+        if (activeCount > this.maxParticles) {
+            const removeCount = activeCount - this.maxParticles;
+            for(let i=0; i<removeCount; i++) {
+                if(this.particles.length > 0) {
+                    this.pool.push(this.particles.shift());
+                }
+            }
+        }
     }
 
     draw(ctx) {
@@ -155,8 +201,11 @@ class ParticleSystem {
     emit(x, y, color, count = 10, options = {}) {
         if (!this.enabled) return;
 
+        // Limita emissão se já estiver cheio
+        if (this.particles.length > this.maxParticles) count = Math.min(count, 2);
+
         for (let i = 0; i < count; i++) {
-            this.particles.push(new Particle(x, y, {
+            this.particles.push(this.getParticle(x, y, {
                 color: color,
                 ...options
             }));
@@ -166,30 +215,31 @@ class ParticleSystem {
     // Explosão de impacto (quando leva tiro)
     emitHit(x, y, color) {
         if (!this.enabled) return;
+        if (this.particles.length > this.maxParticles) return;
 
         // Partículas de sangue/impacto
-        for (let i = 0; i < 15; i++) {
+        for (let i = 0; i < 10; i++) { // Reduzi de 15 para 10
             const angle = Math.random() * Math.PI * 2;
             const speed = Math.random() * 12 + 5;
-            this.particles.push(new Particle(x, y, {
+            this.particles.push(this.getParticle(x, y, {
                 vx: Math.cos(angle) * speed,
                 vy: Math.sin(angle) * speed,
                 color: color,
                 size: Math.random() * 8 + 3,
-                decay: 0.025,
+                decay: 0.04, // Aumentei decay para sumir mais rápido
                 type: 'circle',
                 glow: true
             }));
         }
 
         // Estrelas de impacto
-        for (let i = 0; i < 5; i++) {
-            this.particles.push(new Particle(x, y, {
+        for (let i = 0; i < 3; i++) { // Reduzi de 5 para 3
+            this.particles.push(this.getParticle(x, y, {
                 vx: (Math.random() - 0.5) * 8,
                 vy: (Math.random() - 0.5) * 8 - 3,
                 color: '#ffff00',
                 size: Math.random() * 10 + 5,
-                decay: 0.04,
+                decay: 0.05,
                 type: 'star',
                 gravity: 0.1,
                 glow: true
@@ -200,17 +250,18 @@ class ParticleSystem {
     // Efeito de tiro (muzzle flash)
     emitMuzzleFlash(x, y, angle) {
         if (!this.enabled) return;
+        if (this.particles.length > this.maxParticles) return;
 
         // Flash principal
-        for (let i = 0; i < 10; i++) {
+        for (let i = 0; i < 6; i++) { // Reduzi de 10 para 6
             const spread = (Math.random() - 0.5) * 0.5;
             const speed = Math.random() * 15 + 10;
-            this.particles.push(new Particle(x, y, {
+            this.particles.push(this.getParticle(x, y, {
                 vx: Math.cos(angle + spread) * speed,
                 vy: Math.sin(angle + spread) * speed,
-                color: i < 5 ? '#ffff00' : '#ff8800',
+                color: i < 3 ? '#ffff00' : '#ff8800',
                 size: Math.random() * 5 + 2,
-                decay: 0.08,
+                decay: 0.1, // Mais rápido
                 gravity: 0,
                 type: 'circle',
                 glow: true
@@ -218,15 +269,15 @@ class ParticleSystem {
         }
 
         // Faíscas
-        for (let i = 0; i < 5; i++) {
+        for (let i = 0; i < 3; i++) { // Reduzi de 5 para 3
             const spread = (Math.random() - 0.5) * 1;
             const speed = Math.random() * 20 + 15;
-            this.particles.push(new Particle(x, y, {
+            this.particles.push(this.getParticle(x, y, {
                 vx: Math.cos(angle + spread) * speed,
                 vy: Math.sin(angle + spread) * speed,
                 color: '#ffffff',
                 size: 3,
-                decay: 0.05,
+                decay: 0.08,
                 gravity: 0.1,
                 type: 'spark',
                 trail: true
@@ -237,16 +288,17 @@ class ParticleSystem {
     // Efeito de pulo
     emitJump(x, y) {
         if (!this.enabled) return;
+        if (this.particles.length > this.maxParticles) return;
 
-        for (let i = 0; i < 8; i++) {
+        for (let i = 0; i < 5; i++) { // Reduzi de 8 para 5
             const angle = Math.PI + (Math.random() - 0.5) * 1;
             const speed = Math.random() * 5 + 3;
-            this.particles.push(new Particle(x, y, {
+            this.particles.push(this.getParticle(x, y, {
                 vx: Math.cos(angle) * speed,
                 vy: Math.sin(angle) * speed,
                 color: '#ffffff',
                 size: Math.random() * 4 + 2,
-                decay: 0.05,
+                decay: 0.08,
                 gravity: 0.3,
                 type: 'circle'
             }));
@@ -256,14 +308,15 @@ class ParticleSystem {
     // Efeito de poeira ao andar
     emitDust(x, y, direction) {
         if (!this.enabled) return;
+        if (this.particles.length > this.maxParticles) return;
 
-        for (let i = 0; i < 3; i++) {
-            this.particles.push(new Particle(x, y, {
+        for (let i = 0; i < 2; i++) { // Reduzi de 3 para 2
+            this.particles.push(this.getParticle(x, y, {
                 vx: -direction * (Math.random() * 2 + 1),
                 vy: -Math.random() * 2,
                 color: '#8d6e63',
                 size: Math.random() * 4 + 2,
-                decay: 0.03,
+                decay: 0.06,
                 gravity: 0.05,
                 type: 'circle'
             }));
@@ -275,28 +328,28 @@ class ParticleSystem {
         if (!this.enabled) return;
 
         // Gotículas
-        for (let i = 0; i < 25; i++) {
+        for (let i = 0; i < 15; i++) { // Reduzi de 25 para 15
             const angle = -Math.PI / 2 + (Math.random() - 0.5) * 1.5;
             const speed = Math.random() * 15 + 8;
-            this.particles.push(new Particle(x, y, {
+            this.particles.push(this.getParticle(x, y, {
                 vx: Math.cos(angle) * speed,
                 vy: Math.sin(angle) * speed,
                 color: i % 3 === 0 ? '#4fc3f7' : '#0277bd',
                 size: Math.random() * 6 + 3,
-                decay: 0.015,
+                decay: 0.03, // Mais rápido
                 gravity: 0.4,
                 type: 'circle'
             }));
         }
 
         // Espuma
-        for (let i = 0; i < 10; i++) {
-            this.particles.push(new Particle(x + (Math.random() - 0.5) * 50, y, {
+        for (let i = 0; i < 5; i++) { // Reduzi de 10 para 5
+            this.particles.push(this.getParticle(x + (Math.random() - 0.5) * 50, y, {
                 vx: (Math.random() - 0.5) * 3,
                 vy: -Math.random() * 3,
                 color: '#ffffff',
                 size: Math.random() * 8 + 4,
-                decay: 0.02,
+                decay: 0.04,
                 gravity: 0.05,
                 type: 'circle'
             }));
@@ -311,7 +364,7 @@ class ParticleSystem {
 
         for (let i = 0; i < count; i++) {
             const color = colors[Math.floor(Math.random() * colors.length)];
-            this.particles.push(new Particle(x + (Math.random() - 0.5) * 200, y, {
+            this.particles.push(this.getParticle(x + (Math.random() - 0.5) * 200, y, {
                 vx: (Math.random() - 0.5) * 15,
                 vy: -Math.random() * 20 - 5,
                 color: color,
@@ -327,16 +380,17 @@ class ParticleSystem {
     // Impacto na terra/ilha
     emitGroundHit(x, y) {
         if (!this.enabled) return;
+        if (this.particles.length > this.maxParticles) return;
 
-        for (let i = 0; i < 8; i++) {
+        for (let i = 0; i < 5; i++) { // Reduzi de 8 para 5
             const angle = -Math.PI / 2 + (Math.random() - 0.5) * 1;
             const speed = Math.random() * 5 + 2;
-            this.particles.push(new Particle(x, y, {
+            this.particles.push(this.getParticle(x, y, {
                 vx: Math.cos(angle) * speed,
                 vy: Math.sin(angle) * speed,
                 color: i % 2 === 0 ? '#5d4037' : '#8d6e63',
                 size: Math.random() * 5 + 2,
-                decay: 0.03,
+                decay: 0.06,
                 gravity: 0.3,
                 type: 'square'
             }));
@@ -345,6 +399,7 @@ class ParticleSystem {
 
     clear() {
         this.particles = [];
+        this.pool = []; // Limpa o pool também
     }
 }
 
