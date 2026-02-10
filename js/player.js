@@ -661,25 +661,55 @@ class Player {
 
     drawGenericBody(ctx, legOffset, bodyColor) {
         // Pernas
-        ctx.fillStyle = bodyColor;
-        ctx.fillRect(-12, 12 - legOffset, 10, 22);
-        ctx.fillRect(2, 12 + legOffset, 10, 22);
+        this.drawRect(ctx, -12, 12 - legOffset, 10, 22, bodyColor);
+        this.drawRect(ctx, 2, 12 + legOffset, 10, 22, bodyColor);
 
         // Tronco
-        ctx.fillRect(-14, -22, 28, 38);
+        this.drawRect(ctx, -14, -22, 28, 38, bodyColor);
+
+        // Detalhe no peito
         ctx.fillStyle = this.adjustColor(bodyColor, -30);
         ctx.fillRect(-12, -18, 24, 4);
 
         // Cabeça
-        ctx.fillStyle = '#ffccaa';
-        ctx.fillRect(-12, -38, 24, 22);
+        this.drawRect(ctx, -12, -38, 24, 22, '#ffccaa');
 
         // Cabelo
-        ctx.fillStyle = '#333';
-        ctx.fillRect(-14, -42, 28, 10);
+        this.drawRect(ctx, -14, -42, 28, 10, '#333');
 
         // Olhos
         this.drawEyes(ctx, null);
+    }
+
+    // Helper para desenhar retângulo com sombra simples
+    drawRect(ctx, x, y, w, h, color) {
+        ctx.fillStyle = color;
+        ctx.fillRect(x, y, w, h);
+
+        // Sombra lateral direita e inferior para dar volume
+        ctx.fillStyle = 'rgba(0, 0, 0, 0.15)';
+        ctx.fillRect(x + w - 3, y, 3, h); // Sombra lateral
+        ctx.fillStyle = 'rgba(0, 0, 0, 0.2)';
+        ctx.fillRect(x, y + h - 2, w, 2); // Sombra inferior
+
+        // Brilho na esquerda/topo para dar mais volume
+        ctx.fillStyle = 'rgba(255, 255, 255, 0.1)';
+        ctx.fillRect(x, y, 2, h);
+        ctx.fillRect(x, y, w, 2);
+    }
+
+    // Helper para desenhar círculo com sombra
+    drawCircle(ctx, x, y, radius, color) {
+        ctx.fillStyle = color;
+        ctx.beginPath();
+        ctx.arc(x, y, radius, 0, Math.PI * 2);
+        ctx.fill();
+
+        // Sombra crescente
+        ctx.fillStyle = 'rgba(0, 0, 0, 0.2)';
+        ctx.beginPath();
+        ctx.arc(x, y, radius, 0.25 * Math.PI, 1.25 * Math.PI, true);
+        ctx.fill();
     }
 
     drawHeroSkin(ctx, legOffset) {
@@ -689,287 +719,404 @@ class Player {
         switch (hero.id) {
             case 'luffy':
                 // LUFFY - Colete vermelho, shorts azuis, chapéu de palha
-                // Pernas (shorts azuis)
-                ctx.fillStyle = '#3498db';
-                ctx.fillRect(-12, 12 - legOffset, 10, 22);
-                ctx.fillRect(2, 12 + legOffset, 10, 22);
+                // Pernas (shorts azuis com bainha branca)
+                this.drawRect(ctx, -12, 12 - legOffset, 10, 18, '#3498db');
+                this.drawRect(ctx, 2, 12 + legOffset, 10, 18, '#3498db');
+                // Bainha
+                this.drawRect(ctx, -12, 30 - legOffset, 10, 4, '#ecf0f1');
+                this.drawRect(ctx, 2, 30 + legOffset, 10, 4, '#ecf0f1');
 
                 // Tronco (colete vermelho aberto)
-                ctx.fillStyle = '#e74c3c';
-                ctx.fillRect(-14, -22, 28, 38);
+                this.drawRect(ctx, -14, -22, 28, 38, '#e74c3c');
 
-                // Peito exposto
-                ctx.fillStyle = '#ffccaa';
-                ctx.fillRect(-8, -18, 16, 25);
+                // Peito exposto e barriga
+                this.drawRect(ctx, -8, -18, 16, 34, '#ffccaa');
+
+                // Botões do colete (amarelo)
+                ctx.fillStyle = '#f1c40f';
+                ctx.beginPath(); ctx.arc(-10, -5, 2, 0, Math.PI*2); ctx.fill();
+                ctx.beginPath(); ctx.arc(10, -5, 2, 0, Math.PI*2); ctx.fill();
 
                 // Cicatriz X no peito
                 ctx.strokeStyle = '#c0392b';
                 ctx.lineWidth = 2;
                 ctx.beginPath();
-                ctx.moveTo(-5, -12);
-                ctx.lineTo(5, 2);
-                ctx.moveTo(5, -12);
-                ctx.lineTo(-5, 2);
+                ctx.moveTo(-6, -12);
+                ctx.lineTo(6, 0);
+                ctx.moveTo(6, -12);
+                ctx.lineTo(-6, 0);
                 ctx.stroke();
 
                 // Cabeça
-                ctx.fillStyle = '#ffccaa';
-                ctx.fillRect(-12, -38, 24, 22);
+                this.drawRect(ctx, -12, -38, 24, 22, '#ffccaa');
 
-                // Cabelo preto
+                // Cabelo preto bagunçado
+                this.drawRect(ctx, -13, -42, 26, 8, '#1a1a1a');
+                // Franja
                 ctx.fillStyle = '#1a1a1a';
-                ctx.fillRect(-12, -42, 24, 8);
+                ctx.beginPath();
+                ctx.moveTo(-12, -34); ctx.lineTo(-10, -30); ctx.lineTo(-6, -34);
+                ctx.lineTo(0, -28);
+                ctx.lineTo(6, -34); ctx.lineTo(10, -30); ctx.lineTo(12, -34);
+                ctx.fill();
 
                 if (isTransformed) {
                     // GEAR 4 - corpo fica preto brilhante com marcas vermelhas
-                    ctx.fillStyle = '#1a1a1a';
-                    ctx.fillRect(-14, -22, 28, 38);
+                    this.drawRect(ctx, -16, -22, 32, 38, '#1a1a1a'); // Mais largo
                     ctx.strokeStyle = '#ff4757';
                     ctx.lineWidth = 3;
-                    ctx.strokeRect(-12, -20, 24, 34);
+                    // Haki marks
+                    ctx.beginPath();
+                    ctx.arc(-8, -10, 5, 0, Math.PI*2);
+                    ctx.stroke();
+                    ctx.beginPath();
+                    ctx.arc(8, 10, 5, 0, Math.PI*2);
+                    ctx.stroke();
                 }
                 break;
 
             case 'goku':
                 // GOKU - Gi laranja, faixa azul
                 // Pernas (calça laranja)
-                ctx.fillStyle = '#e67e22';
-                ctx.fillRect(-12, 12 - legOffset, 10, 22);
-                ctx.fillRect(2, 12 + legOffset, 10, 22);
+                this.drawRect(ctx, -12, 12 - legOffset, 10, 22, '#e67e22');
+                this.drawRect(ctx, 2, 12 + legOffset, 10, 22, '#e67e22');
+                // Botas azuis com detalhe vermelho/amarelo
+                this.drawRect(ctx, -12, 28 - legOffset, 10, 6, '#2c3e50');
+                this.drawRect(ctx, 2, 28 + legOffset, 10, 6, '#2c3e50');
+                ctx.fillStyle = '#f1c40f'; // Detalhe da bota
+                ctx.fillRect(-12, 30 - legOffset, 10, 1);
+                ctx.fillRect(2, 30 + legOffset, 10, 1);
 
                 // Tronco (gi laranja)
-                ctx.fillStyle = '#e67e22';
-                ctx.fillRect(-14, -22, 28, 38);
+                this.drawRect(ctx, -14, -22, 28, 38, '#e67e22');
 
-                // Faixa azul
-                ctx.fillStyle = '#3498db';
-                ctx.fillRect(-14, 0, 28, 8);
+                // Camiseta azul por baixo
+                this.drawRect(ctx, -8, -22, 16, 6, '#3498db');
+
+                // Gola do Gi
+                ctx.fillStyle = '#e67e22';
+                ctx.beginPath();
+                ctx.moveTo(-14, -22); ctx.lineTo(-8, -10); ctx.lineTo(-14, 0);
+                ctx.fill();
+                ctx.beginPath();
+                ctx.moveTo(14, -22); ctx.lineTo(8, -10); ctx.lineTo(14, 0);
+                ctx.fill();
+
+                // Faixa azul com nó
+                this.drawRect(ctx, -14, 0, 28, 8, '#3498db');
+                // Nó da faixa
+                this.drawRect(ctx, -16, 2, 4, 10, '#3498db');
 
                 // Símbolo no peito
-                ctx.fillStyle = '#fff';
-                ctx.font = 'bold 10px Arial';
+                this.drawCircle(ctx, -8, -12, 5, '#fff');
+                ctx.fillStyle = '#000';
+                ctx.font = 'bold 8px Arial';
                 ctx.textAlign = 'center';
-                ctx.fillText('亀', 0, -8);
+                ctx.fillText('亀', -8, -10);
 
                 // Cabeça
-                ctx.fillStyle = '#ffccaa';
-                ctx.fillRect(-12, -38, 24, 22);
+                this.drawRect(ctx, -12, -38, 24, 22, '#ffccaa');
                 break;
 
             case 'superman':
                 // SUPERMAN - Traje azul, capa vermelha, S no peito
                 // Capa (atrás)
                 ctx.fillStyle = '#c0392b';
-                ctx.fillRect(-18, -20, 8, 55);
-                ctx.fillRect(10, -20, 8, 55);
+                ctx.beginPath();
+                ctx.moveTo(-18, -20); ctx.lineTo(-24, 35); ctx.lineTo(-10, 35); ctx.lineTo(-10, -20);
+                ctx.fill();
+                ctx.beginPath();
+                ctx.moveTo(10, -20); ctx.lineTo(10, 35); ctx.lineTo(24, 35); ctx.lineTo(18, -20);
+                ctx.fill();
 
-                // Pernas (calção vermelho + botas azuis)
+                // Pernas (azul)
+                this.drawRect(ctx, -12, 12 - legOffset, 10, 22, '#3498db');
+                this.drawRect(ctx, 2, 12 + legOffset, 10, 22, '#3498db');
+
+                // Botas vermelhas
+                this.drawRect(ctx, -12, 24 - legOffset, 10, 10, '#c0392b');
+                this.drawRect(ctx, 2, 24 + legOffset, 10, 10, '#c0392b');
+                // Detalhe topo da bota (V shape)
                 ctx.fillStyle = '#c0392b';
-                ctx.fillRect(-12, 12 - legOffset, 10, 10);
-                ctx.fillRect(2, 12 + legOffset, 10, 10);
-                ctx.fillStyle = '#3498db';
-                ctx.fillRect(-12, 22 - legOffset, 10, 12);
-                ctx.fillRect(2, 22 + legOffset, 10, 12);
+                ctx.beginPath();
+                ctx.moveTo(-12, 24 - legOffset); ctx.lineTo(-7, 28 - legOffset); ctx.lineTo(-2, 24 - legOffset);
+                ctx.fill();
+                ctx.beginPath();
+                ctx.moveTo(2, 24 + legOffset); ctx.lineTo(7, 28 + legOffset); ctx.lineTo(12, 24 + legOffset);
+                ctx.fill();
+
+                // Calção vermelho
+                this.drawRect(ctx, -12, 12 - legOffset, 10, 6, '#c0392b');
+                this.drawRect(ctx, 2, 12 + legOffset, 10, 6, '#c0392b');
 
                 // Tronco (azul)
-                ctx.fillStyle = '#3498db';
-                ctx.fillRect(-14, -22, 28, 38);
+                this.drawRect(ctx, -14, -22, 28, 38, '#3498db');
 
-                // S symbol (escudo amarelo com S vermelho)
+                // Músculos (sombreamento sutil)
+                ctx.fillStyle = 'rgba(0,0,0,0.1)';
+                ctx.fillRect(-10, -10, 20, 2); // Peitoral
+                ctx.fillRect(-4, -10, 8, 20); // Abdomen
+
+                // Cinto amarelo
+                this.drawRect(ctx, -14, 10, 28, 4, '#f1c40f');
+
+                // S symbol (Diamante)
                 ctx.fillStyle = '#f1c40f';
                 ctx.beginPath();
-                ctx.moveTo(0, -18);
-                ctx.lineTo(8, -10);
-                ctx.lineTo(8, 2);
-                ctx.lineTo(0, 10);
-                ctx.lineTo(-8, 2);
-                ctx.lineTo(-8, -10);
+                ctx.moveTo(0, -20);
+                ctx.lineTo(10, -14);
+                ctx.lineTo(0, 4);
+                ctx.lineTo(-10, -14);
                 ctx.closePath();
                 ctx.fill();
+
+                // S
                 ctx.fillStyle = '#c0392b';
-                ctx.font = 'bold 14px serif';
+                ctx.font = 'bold 12px Arial';
                 ctx.textAlign = 'center';
-                ctx.fillText('S', 0, 0);
+                ctx.fillText('S', 0, -8);
 
                 // Cabeça
-                ctx.fillStyle = '#ffccaa';
-                ctx.fillRect(-12, -38, 24, 22);
+                this.drawRect(ctx, -12, -38, 24, 22, '#ffccaa');
+                // Cacho do superman
+                ctx.strokeStyle = '#1a1a1a';
+                ctx.lineWidth = 2;
+                ctx.beginPath();
+                ctx.arc(0, -38, 3, 0, Math.PI, false);
+                ctx.stroke();
                 break;
 
             case 'thor':
                 // THOR - Armadura prateada, capa vermelha, cabelo loiro
-                // Capa
+                // Capa esvoaçante
                 ctx.fillStyle = '#c0392b';
-                ctx.fillRect(-18, -20, 8, 50);
-                ctx.fillRect(10, -20, 8, 50);
-
-                // Pernas (armadura escura)
-                ctx.fillStyle = '#2c3e50';
-                ctx.fillRect(-12, 12 - legOffset, 10, 22);
-                ctx.fillRect(2, 12 + legOffset, 10, 22);
-
-                // Armadura (cinza metálico)
-                ctx.fillStyle = '#95a5a6';
-                ctx.fillRect(-14, -22, 28, 38);
-
-                // Discos metálicos
-                ctx.fillStyle = '#7f8c8d';
                 ctx.beginPath();
-                ctx.arc(-8, -8, 5, 0, Math.PI * 2);
-                ctx.arc(8, -8, 5, 0, Math.PI * 2);
+                ctx.moveTo(-18, -20); ctx.lineTo(-28, 30); ctx.lineTo(-8, 30); ctx.lineTo(-8, -20);
+                ctx.fill();
+                ctx.beginPath();
+                ctx.moveTo(8, -20); ctx.lineTo(8, 30); ctx.lineTo(28, 30); ctx.lineTo(18, -20);
                 ctx.fill();
 
-                // Cabeça
-                ctx.fillStyle = '#ffccaa';
-                ctx.fillRect(-12, -38, 24, 22);
+                // Pernas (armadura escura)
+                this.drawRect(ctx, -12, 12 - legOffset, 10, 22, '#2c3e50');
+                this.drawRect(ctx, 2, 12 + legOffset, 10, 22, '#2c3e50');
+                // Botas douradas
+                this.drawRect(ctx, -12, 26 - legOffset, 10, 8, '#f1c40f');
+                this.drawRect(ctx, 2, 26 + legOffset, 10, 8, '#f1c40f');
 
-                // Cabelo loiro
-                ctx.fillStyle = '#f1c40f';
-                ctx.fillRect(-14, -42, 28, 10);
-                ctx.fillRect(-15, -38, 4, 12);
-                ctx.fillRect(11, -38, 4, 12);
+                // Armadura (cinza metálico com detalhes)
+                this.drawRect(ctx, -14, -22, 28, 38, '#95a5a6');
+                // Colar detalhado
+                ctx.strokeStyle = '#f1c40f';
+                ctx.lineWidth = 1;
+                ctx.beginPath(); ctx.moveTo(-14, -22); ctx.lineTo(0, -10); ctx.lineTo(14, -22); ctx.stroke();
+
+                // Discos metálicos (6 discos)
+                for(let i=0; i<3; i++) {
+                    this.drawCircle(ctx, -7, -14 + i*14, 4, '#bdc3c7');
+                    this.drawCircle(ctx, 7, -14 + i*14, 4, '#bdc3c7');
+                }
+
+                // Cabeça
+                this.drawRect(ctx, -12, -38, 24, 22, '#ffccaa');
+
+                // Cabelo loiro longo
+                this.drawRect(ctx, -14, -42, 28, 10, '#f1c40f');
+                this.drawRect(ctx, -15, -38, 4, 18, '#f1c40f');
+                this.drawRect(ctx, 11, -38, 4, 18, '#f1c40f');
+
+                // Capacete alado (asas laterais)
+                ctx.fillStyle = '#bdc3c7';
+                ctx.beginPath();
+                ctx.moveTo(-14, -38); ctx.lineTo(-24, -48); ctx.lineTo(-14, -44);
+                ctx.fill();
+                ctx.beginPath();
+                ctx.moveTo(14, -38); ctx.lineTo(24, -48); ctx.lineTo(14, -44);
+                ctx.fill();
                 break;
 
             case 'captain_america':
                 // CAP - Uniforme azul com listras, estrela no peito
-                // Pernas (azul com listras vermelhas)
-                ctx.fillStyle = '#3498db';
-                ctx.fillRect(-12, 12 - legOffset, 10, 22);
-                ctx.fillRect(2, 12 + legOffset, 10, 22);
-                ctx.fillStyle = '#e74c3c';
-                ctx.fillRect(-12, 20 - legOffset, 10, 4);
-                ctx.fillRect(2, 20 + legOffset, 10, 4);
+                // Pernas (azul)
+                this.drawRect(ctx, -12, 12 - legOffset, 10, 22, '#3498db');
+                this.drawRect(ctx, 2, 12 + legOffset, 10, 22, '#3498db');
+                // Botas vermelhas
+                this.drawRect(ctx, -12, 24 - legOffset, 10, 10, '#e74c3c');
+                this.drawRect(ctx, 2, 24 + legOffset, 10, 10, '#e74c3c');
 
-                // Tronco (listras)
-                ctx.fillStyle = '#3498db';
-                ctx.fillRect(-14, -22, 28, 38);
+                // Tronco
+                this.drawRect(ctx, -14, -22, 28, 38, '#3498db');
+                // Escamas (textura)
+                ctx.fillStyle = 'rgba(255,255,255,0.1)';
+                for(let i=0; i<3; i++) {
+                    ctx.fillRect(-10 + i*8, -18, 4, 4);
+                    ctx.fillRect(-14 + i*8, -14, 4, 4);
+                }
 
-                // Listras vermelhas e brancas
+                // Listras vermelhas e brancas no abdomen
                 for (let i = 0; i < 5; i++) {
-                    ctx.fillStyle = i % 2 === 0 ? '#e74c3c' : '#fff';
-                    ctx.fillRect(-14, 2 + i * 4, 28, 4);
+                    this.drawRect(ctx, -14, 2 + i * 4, 28, 4, i % 2 === 0 ? '#e74c3c' : '#fff');
                 }
 
                 // Estrela branca
                 ctx.fillStyle = '#fff';
                 ctx.font = 'bold 16px Arial';
                 ctx.textAlign = 'center';
-                ctx.fillText('★', 0, -5);
+                ctx.fillText('★', 0, -8);
+
+                // Cinto utilidades
+                this.drawRect(ctx, -14, 0, 28, 4, '#2c3e50');
 
                 // Cabeça com máscara
-                ctx.fillStyle = '#3498db';
-                ctx.fillRect(-12, -38, 24, 22);
-                ctx.fillStyle = '#ffccaa';
-                ctx.fillRect(-8, -30, 16, 14);
+                this.drawRect(ctx, -12, -38, 24, 22, '#3498db');
+                this.drawRect(ctx, -8, -30, 16, 14, '#ffccaa');
+                // Asas pintadas na máscara
+                ctx.fillStyle = '#fff';
+                ctx.font = 'bold 10px Arial';
+                ctx.fillText('A', 0, -40);
                 break;
 
             case 'iron_man':
                 // IRON MAN - Armadura vermelha e dourada
                 // Pernas (vermelho)
-                ctx.fillStyle = '#c0392b';
-                ctx.fillRect(-12, 12 - legOffset, 10, 22);
-                ctx.fillRect(2, 12 + legOffset, 10, 22);
-                ctx.fillStyle = '#f1c40f';
-                ctx.fillRect(-12, 18 - legOffset, 10, 6);
-                ctx.fillRect(2, 18 + legOffset, 10, 6);
+                this.drawRect(ctx, -12, 12 - legOffset, 10, 22, '#c0392b');
+                this.drawRect(ctx, 2, 12 + legOffset, 10, 22, '#c0392b');
+                // Detalhe perna dourado
+                this.drawRect(ctx, -12, 18 - legOffset, 10, 6, '#f1c40f');
+                this.drawRect(ctx, 2, 18 + legOffset, 10, 6, '#f1c40f');
 
-                // Armadura (vermelho com detalhes dourados)
-                ctx.fillStyle = '#c0392b';
-                ctx.fillRect(-14, -22, 28, 38);
+                // Armadura (vermelho metálico)
+                this.drawRect(ctx, -14, -22, 28, 38, '#c0392b');
+
+                // Gradiente simples no peito para parecer metal
+                ctx.fillStyle = 'rgba(255,255,255,0.1)';
+                ctx.fillRect(-10, -20, 10, 10);
 
                 // Arc reactor
                 ctx.fillStyle = '#00bfff';
                 ctx.shadowColor = '#00bfff';
-                ctx.shadowBlur = 15;
+                ctx.shadowBlur = 20;
                 ctx.beginPath();
-                ctx.arc(0, -5, 8, 0, Math.PI * 2);
+                ctx.arc(0, -6, 6, 0, Math.PI * 2);
+                ctx.fill();
+                ctx.fillStyle = '#fff'; // Centro branco
+                ctx.beginPath();
+                ctx.arc(0, -6, 3, 0, Math.PI * 2);
                 ctx.fill();
                 ctx.shadowBlur = 0;
 
-                // Detalhes dourados
-                ctx.fillStyle = '#f1c40f';
-                ctx.fillRect(-14, -10, 5, 20);
-                ctx.fillRect(9, -10, 5, 20);
+                // Detalhes dourados no ombro/lateral
+                this.drawRect(ctx, -14, -22, 6, 12, '#f1c40f');
+                this.drawRect(ctx, 8, -22, 6, 12, '#f1c40f');
 
                 // Cabeça (capacete)
-                ctx.fillStyle = '#c0392b';
-                ctx.fillRect(-12, -38, 24, 22);
-                ctx.fillStyle = '#f1c40f';
-                ctx.fillRect(-8, -32, 16, 8);
+                this.drawRect(ctx, -12, -38, 24, 22, '#c0392b');
+                // Faceplate dourada
+                this.drawRect(ctx, -10, -36, 20, 20, '#f1c40f');
+                // Queixo vermelho
+                this.drawRect(ctx, -8, -18, 16, 2, '#c0392b');
 
                 // Olhos brilhantes
-                ctx.fillStyle = '#fff';
-                ctx.shadowColor = '#fff';
+                ctx.fillStyle = '#87ceeb';
+                ctx.shadowColor = '#87ceeb';
                 ctx.shadowBlur = 10;
-                ctx.fillRect(-7, -30, 6, 4);
-                ctx.fillRect(1, -30, 6, 4);
+                ctx.fillRect(-7, -30, 6, 2);
+                ctx.fillRect(1, -30, 6, 2);
                 ctx.shadowBlur = 0;
                 break;
 
             case 'samurai':
                 // SAMURAI - Armadura tradicional, cabelo preso
                 // Pernas (hakama preto)
-                ctx.fillStyle = '#1a1a1a';
-                ctx.fillRect(-12, 12 - legOffset, 10, 22);
-                ctx.fillRect(2, 12 + legOffset, 10, 22);
+                this.drawRect(ctx, -12, 12 - legOffset, 10, 22, '#1a1a1a');
+                this.drawRect(ctx, 2, 12 + legOffset, 10, 22, '#1a1a1a');
 
-                // Armadura (vermelho e preto)
-                ctx.fillStyle = '#8b0000';
-                ctx.fillRect(-14, -22, 28, 38);
+                // Tronco (armadura vermelha)
+                this.drawRect(ctx, -14, -22, 28, 38, '#8b0000');
 
-                // Placas de armadura
-                ctx.fillStyle = '#1a1a1a';
-                ctx.fillRect(-14, -22, 28, 8);
-                ctx.fillRect(-14, 6, 28, 8);
+                // Kusazuri (placas da cintura)
+                this.drawRect(ctx, -14, 10, 28, 8, '#1a1a1a');
+                // Detalhes dourados
+                ctx.fillStyle = '#f1c40f';
+                for(let i=0; i<4; i++) {
+                    ctx.fillRect(-12 + i*7, 12, 2, 4);
+                }
+
+                // Peitoral detalhado
+                this.drawRect(ctx, -12, -20, 10, 20, '#1a1a1a');
+                this.drawRect(ctx, 2, -20, 10, 20, '#1a1a1a');
 
                 // Cabeça
-                ctx.fillStyle = '#ffccaa';
-                ctx.fillRect(-12, -38, 24, 22);
+                this.drawRect(ctx, -12, -38, 24, 22, '#ffccaa');
+
+                // Capacete Kabuto (se não desenhado no headgear, desenha aqui a base)
+                this.drawRect(ctx, -13, -42, 26, 6, '#1a1a1a');
+                // Chifres (Kuwagata) dourados
+                ctx.strokeStyle = '#f1c40f';
+                ctx.lineWidth = 2;
+                ctx.beginPath();
+                ctx.moveTo(-8, -42); ctx.quadraticCurveTo(-15, -55, -5, -58);
+                ctx.stroke();
+                ctx.beginPath();
+                ctx.moveTo(8, -42); ctx.quadraticCurveTo(15, -55, 5, -58);
+                ctx.stroke();
                 break;
 
             case 'batman':
                 // BATMAN - Todo preto, cinto amarelo, símbolo do morcego
-                // Pernas (preto)
+                // Capa escura
                 ctx.fillStyle = '#1a1a1a';
-                ctx.fillRect(-12, 12 - legOffset, 10, 22);
-                ctx.fillRect(2, 12 + legOffset, 10, 22);
+                ctx.beginPath();
+                ctx.moveTo(-18, -20); ctx.lineTo(-24, 30);
+                // Pontas da capa
+                ctx.lineTo(-20, 25); ctx.lineTo(-16, 30); ctx.lineTo(-12, 25); ctx.lineTo(-8, 30);
+                ctx.lineTo(-8, -20);
+                ctx.fill();
+                ctx.beginPath();
+                ctx.moveTo(8, -20); ctx.lineTo(8, 30);
+                ctx.lineTo(12, 25); ctx.lineTo(16, 30); ctx.lineTo(20, 25); ctx.lineTo(24, 30);
+                ctx.lineTo(18, -20);
+                ctx.fill();
 
-                // Tronco (cinza escuro)
-                ctx.fillStyle = '#2c3e50';
-                ctx.fillRect(-14, -22, 28, 38);
+                // Pernas (preto)
+                this.drawRect(ctx, -12, 12 - legOffset, 10, 22, '#1a1a1a');
+                this.drawRect(ctx, 2, 12 + legOffset, 10, 22, '#1a1a1a');
 
-                // Cinto amarelo
-                ctx.fillStyle = '#f1c40f';
-                ctx.fillRect(-14, 4, 28, 6);
+                // Tronco (cinza escuro e armadura)
+                this.drawRect(ctx, -14, -22, 28, 38, '#2c3e50');
+                // Placas da armadura
+                ctx.fillStyle = 'rgba(0,0,0,0.3)';
+                ctx.fillRect(-12, -20, 10, 12);
+                ctx.fillRect(2, -20, 10, 12);
+                ctx.fillRect(-12, -6, 10, 8);
+                ctx.fillRect(2, -6, 10, 8);
+
+                // Cinto amarelo com bolsos
+                this.drawRect(ctx, -14, 4, 28, 6, '#f1c40f');
+                ctx.fillStyle = '#e67e22';
+                ctx.fillRect(-10, 5, 4, 4); ctx.fillRect(-2, 5, 4, 4); ctx.fillRect(6, 5, 4, 4);
 
                 // Símbolo do morcego
                 ctx.fillStyle = '#1a1a1a';
                 ctx.beginPath();
-                ctx.ellipse(0, -8, 10, 6, 0, 0, Math.PI * 2);
-                ctx.fill();
-                ctx.beginPath();
-                ctx.moveTo(-8, -10);
-                ctx.lineTo(-14, -18);
-                ctx.lineTo(-6, -12);
-                ctx.closePath();
-                ctx.fill();
-                ctx.beginPath();
-                ctx.moveTo(8, -10);
-                ctx.lineTo(14, -18);
-                ctx.lineTo(6, -12);
-                ctx.closePath();
+                ctx.ellipse(0, -10, 12, 5, 0, 0, Math.PI * 2);
                 ctx.fill();
 
                 // Cabeça com máscara
+                this.drawRect(ctx, -12, -38, 24, 22, '#1a1a1a');
+                this.drawRect(ctx, -6, -28, 12, 10, '#ffccaa');
+                // Orelhas pontudas
                 ctx.fillStyle = '#1a1a1a';
-                ctx.fillRect(-12, -38, 24, 22);
-                ctx.fillStyle = '#ffccaa';
-                ctx.fillRect(-6, -28, 12, 10);
+                ctx.beginPath();
+                ctx.moveTo(-12, -38); ctx.lineTo(-10, -50); ctx.lineTo(-4, -38);
+                ctx.fill();
+                ctx.beginPath();
+                ctx.moveTo(12, -38); ctx.lineTo(10, -50); ctx.lineTo(4, -38);
+                ctx.fill();
 
                 if (isTransformed) {
                     // HELLBAT - armadura vermelha brilhante
-                    ctx.fillStyle = '#8b0000';
-                    ctx.fillRect(-14, -22, 28, 38);
+                    this.drawRect(ctx, -14, -22, 28, 38, '#8b0000');
                     ctx.fillStyle = '#ff0000';
                     ctx.shadowColor = '#ff0000';
                     ctx.shadowBlur = 20;
@@ -981,39 +1128,48 @@ class Player {
 
             case 'darkseid':
                 // DARKSEID - Pele cinza, armadura preta, olhos vermelhos
-                // Pernas (cinza)
-                ctx.fillStyle = '#4a4a4a';
-                ctx.fillRect(-12, 12 - legOffset, 10, 22);
-                ctx.fillRect(2, 12 + legOffset, 10, 22);
+                // Pernas (azul escuro/cinza)
+                this.drawRect(ctx, -12, 12 - legOffset, 10, 22, '#2c3e50');
+                this.drawRect(ctx, 2, 12 + legOffset, 10, 22, '#2c3e50');
+                // Botas
+                this.drawRect(ctx, -12, 26 - legOffset, 10, 8, '#1a1a1a');
+                this.drawRect(ctx, 2, 26 + legOffset, 10, 8, '#1a1a1a');
 
-                // Corpo (mais largo, mais imponente)
-                ctx.fillStyle = '#2c3e50';
-                ctx.fillRect(-16, -22, 32, 40);
+                // Corpo (mais largo)
+                this.drawRect(ctx, -16, -22, 32, 40, '#2c3e50'); // Túnica azul escura
 
-                // Linhas de energia
-                ctx.strokeStyle = '#ff0000';
-                ctx.lineWidth = 2;
-                ctx.beginPath();
-                ctx.moveTo(-12, -15);
-                ctx.lineTo(-12, 10);
-                ctx.moveTo(12, -15);
-                ctx.lineTo(12, 10);
-                ctx.stroke();
+                // Textura rochosa
+                ctx.fillStyle = 'rgba(0,0,0,0.2)';
+                ctx.fillRect(-10, -18, 2, 2);
+                ctx.fillRect(5, -12, 2, 2);
+                ctx.fillRect(-6, 0, 2, 2);
+                ctx.fillRect(8, 10, 2, 2);
+                ctx.fillRect(0, -5, 2, 2);
+
+                // Cinto/Detalhe
+                this.drawRect(ctx, -16, 0, 32, 6, '#1a1a1a');
 
                 // Símbolo Omega
                 ctx.fillStyle = '#ff0000';
-                ctx.font = 'bold 14px Arial';
+                ctx.font = 'bold 16px Arial';
                 ctx.textAlign = 'center';
-                ctx.fillText('Ω', 0, 0);
+                ctx.shadowColor = '#ff0000';
+                ctx.shadowBlur = 10;
+                ctx.fillText('Ω', 0, -5);
+                ctx.shadowBlur = 0;
 
-                // Cabeça (pele rochosa, queixo quadrado)
-                ctx.fillStyle = '#4a4a4a';
-                ctx.fillRect(-14, -40, 28, 26);
+                // Cabeça (pele rochosa)
+                this.drawRect(ctx, -14, -40, 28, 26, '#4a4a4a');
+                // Textura na cara
+                ctx.fillStyle = 'rgba(0,0,0,0.3)';
+                ctx.fillRect(-10, -38, 4, 1);
+                ctx.fillRect(5, -36, 3, 1);
+                ctx.fillRect(-5, -20, 10, 2); // Boca
 
                 // Olhos vermelhos brilhantes
                 ctx.fillStyle = '#ff0000';
                 ctx.shadowColor = '#ff0000';
-                ctx.shadowBlur = 15;
+                ctx.shadowBlur = 20;
                 ctx.fillRect(-10, -34, 8, 4);
                 ctx.fillRect(2, -34, 8, 4);
                 ctx.shadowBlur = 0;
