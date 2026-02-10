@@ -277,15 +277,15 @@ class Bullet {
     }
 
     explode(players) {
-        // Explosão visual massiva
-        Particles.emit(this.x, this.y, '#ff6600', 40, {
-            size: 20, decay: 0.015, glow: true, speed: 15
+        // Explosão visual otimizada (reduzido de 90 para ~25 partículas)
+        Particles.emit(this.x, this.y, '#ff6600', 10, {
+            size: 15, decay: 0.03, glow: true, speed: 12
         });
-        Particles.emit(this.x, this.y, '#ffff00', 30, {
-            size: 15, decay: 0.02, speed: 12
+        Particles.emit(this.x, this.y, '#ffff00', 8, {
+            size: 10, decay: 0.04, speed: 10
         });
-        Particles.emit(this.x, this.y, '#ff0000', 20, {
-            size: 25, decay: 0.01, glow: true, speed: 8
+        Particles.emit(this.x, this.y, '#ff0000', 6, {
+            size: 20, decay: 0.02, glow: true, speed: 6
         });
 
         // Dano em área
