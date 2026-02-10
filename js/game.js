@@ -11,6 +11,7 @@ const Game = {
 
     players: [],
     bulletManager: new BulletManager(),
+    backgroundManager: new BackgroundManager(),
     clouds: [],
     walls: [],
 
@@ -49,7 +50,6 @@ const Game = {
 
         this.resize();
         this.bindEvents();
-        this.generateClouds();
         this.createCharacterSelectUI();
 
         this.menuLoop();
@@ -62,6 +62,7 @@ const Game = {
     resize() {
         this.canvas.width = window.innerWidth;
         this.canvas.height = window.innerHeight;
+        this.backgroundManager.init(this.canvas.width, this.canvas.height);
     },
 
     createCharacterSelectUI() {
@@ -582,8 +583,20 @@ const Game = {
             x: (this.canvas.width - w) / 2,
             y: this.canvas.height - 180,
             width: w,
-            height: h
+            height: h,
+            windows: []
         };
+
+        // Gerar janelas estáticas para o prédio principal
+        const windowSize = 30;
+        const gap = 60;
+        for (let y = this.island.y + 80; y < this.island.y + this.island.height; y += gap + 20) {
+            for (let x = this.island.x + 50; x < this.island.x + this.island.width - 50; x += gap) {
+                if (Math.random() > 0.3) {
+                    this.island.windows.push({ x, y, w: windowSize, h: windowSize * 1.5 });
+                }
+            }
+        }
 
         const wallHeight = 200;
         const wallWidth = 40;
@@ -645,6 +658,8 @@ const Game = {
     },
 
     update() {
+        this.backgroundManager.update();
+
         // Atualizar jogadores
         this.players.forEach(player => {
             player.update(this.keys, this.mouse, this.island, this.walls, this.camera, this.gravity);
@@ -801,7 +816,7 @@ const Game = {
     draw() {
         this.ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
 
-        this.drawSky();
+        this.backgroundManager.draw(this.ctx, this.camera);
 
         this.ctx.save();
         this.ctx.translate(this.camera.offsetX, this.camera.offsetY);
@@ -860,111 +875,81 @@ const Game = {
         });
     },
 
-    drawSky() {
-        const ctx = this.ctx;
-
-        const skyGrad = ctx.createLinearGradient(0, 0, 0, this.canvas.height);
-        skyGrad.addColorStop(0, '#1a1a2e');
-        skyGrad.addColorStop(0.3, '#16213e');
-        skyGrad.addColorStop(0.6, '#0f3460');
-        skyGrad.addColorStop(1, '#533483');
-        ctx.fillStyle = skyGrad;
-        ctx.fillRect(0, 0, this.canvas.width, this.canvas.height);
-
-        ctx.fillStyle = 'rgba(255, 255, 255, 0.8)';
-        for (let i = 0; i < 100; i++) {
-            const x = (i * 137) % this.canvas.width;
-            const y = (i * 89) % (this.canvas.height * 0.6);
-            const size = (i % 3) + 1;
-            const twinkle = Math.sin(Date.now() * 0.003 + i) * 0.5 + 0.5;
-            ctx.globalAlpha = twinkle * 0.8;
-            ctx.beginPath();
-            ctx.arc(x, y, size, 0, Math.PI * 2);
-            ctx.fill();
-        }
-        ctx.globalAlpha = 1;
-
-        ctx.save();
-        ctx.shadowColor = '#f5f5dc';
-        ctx.shadowBlur = 30;
-        ctx.fillStyle = '#f5f5dc';
-        ctx.beginPath();
-        ctx.arc(this.canvas.width - 120, 100, 50, 0, Math.PI * 2);
-        ctx.fill();
-        ctx.fillStyle = 'rgba(200, 200, 200, 0.3)';
-        ctx.beginPath();
-        ctx.arc(this.canvas.width - 135, 90, 12, 0, Math.PI * 2);
-        ctx.fill();
-        ctx.beginPath();
-        ctx.arc(this.canvas.width - 105, 115, 8, 0, Math.PI * 2);
-        ctx.fill();
-        ctx.restore();
-
-        ctx.fillStyle = 'rgba(255, 255, 255, 0.15)';
-        this.clouds.forEach(c => {
-            ctx.globalAlpha = c.opacity;
-            ctx.beginPath();
-            ctx.arc(c.x, c.y, c.w / 2, 0, Math.PI * 2);
-            ctx.arc(c.x + c.w * 0.4, c.y - 10, c.w / 2.5, 0, Math.PI * 2);
-            ctx.arc(c.x + c.w * 0.8, c.y, c.w / 2, 0, Math.PI * 2);
-            ctx.fill();
-            c.x += c.speed;
-            if (c.x > this.canvas.width + 100) c.x = -150;
-        });
-        ctx.globalAlpha = 1;
-
-        const seaY = this.canvas.height - 80;
-        const seaGrad = ctx.createLinearGradient(0, seaY, 0, this.canvas.height);
-        seaGrad.addColorStop(0, '#0077b6');
-        seaGrad.addColorStop(1, '#023e8a');
-        ctx.fillStyle = seaGrad;
-        ctx.fillRect(0, seaY, this.canvas.width, 80);
-
-        ctx.fillStyle = 'rgba(72, 202, 228, 0.6)';
-        for (let i = 0; i < this.canvas.width; i += 35) {
-            const waveOffset = Math.sin((Date.now() * 0.002) + i * 0.1) * 8;
-            ctx.beginPath();
-            ctx.arc(i, seaY + waveOffset, 18, 0, Math.PI, true);
-            ctx.fill();
-        }
-    },
-
     drawIsland() {
         const ctx = this.ctx;
         const island = this.island;
 
-        ctx.fillStyle = 'rgba(0, 0, 0, 0.3)';
+        // Sombras
+        ctx.fillStyle = 'rgba(0, 0, 0, 0.5)';
         ctx.beginPath();
         ctx.ellipse(
             island.x + island.width / 2,
-            this.canvas.height - 20,
-            island.width / 2 + 30,
-            30,
+            this.canvas.height, // Mais baixo
+            island.width / 2 + 100,
+            100,
             0, 0, Math.PI * 2
         );
         ctx.fill();
 
-        ctx.fillStyle = '#5d4037';
-        ctx.fillRect(island.x, island.y, island.width, island.height);
+        // Prédio Base (Concreto)
+        const buildingGrad = ctx.createLinearGradient(island.x, island.y, island.x + island.width, island.y);
+        buildingGrad.addColorStop(0, '#2c3e50');
+        buildingGrad.addColorStop(0.5, '#34495e');
+        buildingGrad.addColorStop(1, '#2c3e50');
+        ctx.fillStyle = buildingGrad;
+        ctx.fillRect(island.x, island.y, island.width, island.height + 200);
 
-        ctx.fillStyle = '#4e342e';
-        ctx.fillRect(island.x + 10, island.y + 60, island.width - 20, 40);
+        // Detalhes de concreto
+        ctx.fillStyle = '#2c3e50';
+        ctx.fillRect(island.x + 20, island.y + 50, island.width - 40, island.height);
 
-        ctx.fillStyle = '#3e2723';
-        ctx.fillRect(island.x + 20, island.y + 110, island.width - 40, 50);
+        // Borda superior (telhado)
+        ctx.fillStyle = '#95a5a6';
+        ctx.fillRect(island.x - 10, island.y, island.width + 20, 20);
+        ctx.fillStyle = '#7f8c8d';
+        ctx.fillRect(island.x - 10, island.y + 20, island.width + 20, 10);
 
-        const grassGrad = ctx.createLinearGradient(0, island.y, 0, island.y + 35);
-        grassGrad.addColorStop(0, '#66bb6a');
-        grassGrad.addColorStop(1, '#43a047');
-        ctx.fillStyle = grassGrad;
-        ctx.fillRect(island.x - 15, island.y, island.width + 30, 35);
-
-        ctx.fillStyle = '#81c784';
-        for (let i = 0; i < island.width; i += 25) {
-            const x = island.x + i;
-            const h = 5 + Math.random() * 10;
-            ctx.fillRect(x, island.y - h, 3, h);
+        // Props do telhado
+        // Caixa de ar condicionado
+        ctx.fillStyle = '#bdc3c7';
+        ctx.fillRect(island.x + 100, island.y - 40, 60, 40);
+        ctx.fillStyle = '#7f8c8d';
+        ctx.fillRect(island.x + 105, island.y - 35, 50, 30); // grade
+        for(let i=0; i<5; i++) {
+             ctx.fillRect(island.x + 110 + i*10, island.y - 35, 2, 30);
         }
+
+        // Antena
+        ctx.strokeStyle = '#bdc3c7';
+        ctx.lineWidth = 3;
+        ctx.beginPath();
+        ctx.moveTo(island.x + island.width - 150, island.y);
+        ctx.lineTo(island.x + island.width - 150, island.y - 120);
+        ctx.stroke();
+        // Prato da antena
+        ctx.beginPath();
+        ctx.arc(island.x + island.width - 150, island.y - 120, 20, 0, Math.PI, true);
+        ctx.stroke();
+
+        // Exaustor
+        ctx.fillStyle = '#7f8c8d';
+        ctx.beginPath();
+        ctx.arc(island.x + island.width/2, island.y - 15, 25, Math.PI, 0);
+        ctx.fill();
+        ctx.fillStyle = '#34495e'; // buraco
+        ctx.beginPath();
+        ctx.arc(island.x + island.width/2, island.y - 15, 18, Math.PI, 0);
+        ctx.fill();
+
+        // Janelas do prédio principal (estáticas)
+        ctx.fillStyle = '#f1c40f'; // luz amarela
+        ctx.globalAlpha = 0.8;
+        if (island.windows) {
+            island.windows.forEach(w => {
+                ctx.fillRect(w.x, w.y, w.w, w.h);
+            });
+        }
+        ctx.globalAlpha = 1;
     },
 
     gameLoop() {
@@ -979,28 +964,15 @@ const Game = {
     menuLoop() {
         if (this.state !== 'MENU' && this.state !== 'GAMEOVER') return;
 
-        this.drawSky();
+        this.backgroundManager.update();
+        this.backgroundManager.draw(this.ctx, this.camera);
 
+        // Simples chão para o menu
         const ctx = this.ctx;
-
-        ctx.fillStyle = '#8b4513';
-        ctx.fillRect(this.canvas.width / 2 - 260, this.canvas.height - 280, 35, 130);
-        ctx.fillRect(this.canvas.width / 2 + 225, this.canvas.height - 280, 35, 130);
-
-        ctx.fillStyle = '#5d4037';
-        ctx.fillRect(
-            this.canvas.width / 2 - 250,
-            this.canvas.height - 150,
-            500,
-            150
-        );
-        ctx.fillStyle = '#4caf50';
-        ctx.fillRect(
-            this.canvas.width / 2 - 260,
-            this.canvas.height - 150,
-            520,
-            25
-        );
+        ctx.fillStyle = '#2c3e50';
+        ctx.fillRect(0, this.canvas.height - 100, this.canvas.width, 100);
+        ctx.fillStyle = '#95a5a6';
+        ctx.fillRect(0, this.canvas.height - 100, this.canvas.width, 10);
 
         requestAnimationFrame(() => this.menuLoop());
     }
