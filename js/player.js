@@ -131,15 +131,19 @@ class Player {
             this.updateP2Controls(keys);
         }
 
-        // Física de equilíbrio
-        if (!this.isJumping && !this.isSliding) {
-            const uprightForce = 0.012;
+        // Física de equilíbrio (agora muito mais forte para evitar "mortais")
+        if (!this.isSliding && !this.dead) {
+            const uprightForce = 0.1; // Força muito maior para manter em pé
             this.angVel -= this.angle * uprightForce;
+
+            // Inclinação leve baseada na velocidade X
+            const targetLean = this.vx * 0.015;
+            this.angle += (targetLean - this.angle) * 0.1;
         }
 
         // Rotação
         this.angle += this.angVel;
-        this.angVel *= this.onGround ? 0.85 : 0.99;
+        this.angVel *= this.onGround ? 0.5 : 0.9; // Mais atrito angular
 
         // Gravidade modificada por habilidades
         let effectiveGravity = gravity;
@@ -160,6 +164,9 @@ class Player {
                     Particles.emit(this.x, this.y + this.h / 2, '#00bfff', 2, {
                         vy: 5, size: 4, decay: 0.1
                     });
+
+                    // Inclina para frente ao voar (estilo Iron Man)
+                    this.angle = this.facing * 0.5; // ~30 graus
                 }
             }
         }
@@ -350,7 +357,8 @@ class Player {
         this.vy = -15;
         this.onGround = false;
         this.isJumping = true;
-        this.angVel = -0.4 * this.facing;
+        // Removida a rotação forçada (angVel = -0.4...)
+        // this.angVel = -0.4 * this.facing;
 
         Particles.emitJump(this.x, this.y + this.h / 2);
     }
@@ -372,7 +380,10 @@ class Player {
         const bullets = this.hero.attack(mx, my, this.aimAngle, this.id);
 
         if (bullets && bullets.length > 0) {
-            Particles.emitMuzzleFlash(mx, my, this.aimAngle);
+            // Flash de tiro (apenas se não tiver noFlash)
+            if (!this.hero.type.attack.noFlash) {
+                Particles.emitMuzzleFlash(mx, my, this.aimAngle);
+            }
 
             const recoil = this.hero.getRecoil();
             this.vx -= Math.cos(this.aimAngle) * recoil;

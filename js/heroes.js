@@ -13,14 +13,14 @@ const HeroClasses = {
         emoji: '⚔️',
         color: '#e74c3c',
         description: 'Corta projéteis com a katana! Slash rápido.',
-        health: 100,
-        speed: 1.0,
+        health: 110, // Buff +10 HP
+        speed: 1.05, // Buff speed
 
         attack: {
             type: 'slash',
-            damage: 22,
+            damage: 24, // Buff +2 dano
             speed: 50,
-            cooldown: 18,
+            cooldown: 20, // Nerf +2 cooldown
             recoil: 4,
             color: '#ffffff',
             size: 12,
@@ -41,13 +41,13 @@ const HeroClasses = {
         emoji: '🏴‍☠️',
         color: '#e74c3c',
         description: 'Gomu Gomu no Pistol! Braço estica e volta!',
-        health: 120,
-        speed: 0.9,
+        health: 115, // Nerf -5 HP
+        speed: 0.95, // Buff speed
 
         attack: {
             type: 'stretch_punch',
-            damage: 18,
-            cooldown: 30,
+            damage: 20, // Buff +2 dano
+            cooldown: 35, // Nerf +5 cooldown
             recoil: 6,
             stretchSpeed: 40,
             maxStretch: 350,
@@ -78,14 +78,14 @@ const HeroClasses = {
         emoji: '🐉',
         color: '#f39c12',
         description: 'KAMEHAMEHA!!! (Segura botão direito)',
-        health: 100,
+        health: 95, // Nerf -5 HP (Glass cannon)
         speed: 1.1,
 
         attack: {
             type: 'ki_blast',
-            damage: 10,
-            speed: 55,
-            cooldown: 10,
+            damage: 9, // Nerf -1 dano (spam nerf)
+            speed: 50,
+            cooldown: 12, // Nerf +2 cooldown
             recoil: 3,
             color: '#00bfff',
             size: 10
@@ -206,7 +206,8 @@ const HeroClasses = {
             recoil: 2,
             color: '#00bfff',
             size: 7,
-            spread: 0.12
+            spread: 0.12,
+            noFlash: true // Remove partícula de explosão no muzzle
         },
 
         special: {
@@ -227,15 +228,15 @@ const HeroClasses = {
         name: 'Batman',
         emoji: '🦇',
         color: '#2c3e50',
-        description: 'Batarangs + HELLBAT ARMOR!',
+        description: 'Combo de Batarangs: Normal -> Gelo -> Explosivo!',
         health: 90,
         speed: 1.05,
 
         attack: {
-            type: 'batarang',
+            type: 'batarang_combo', // Novo tipo
             damage: 15,
             speed: 45,
-            cooldown: 20,
+            cooldown: 25,
             recoil: 2,
             color: '#2c3e50',
             size: 12,
@@ -428,6 +429,9 @@ class Hero {
         // Charging
         this.isCharging = false;
         this.chargeTime = 0;
+
+        // Combo system (Batman)
+        this.comboIndex = 0;
     }
 
     update() {
@@ -641,19 +645,42 @@ class Hero {
                 Audio.playShoot();
                 break;
 
-            case 'batarang':
-                // Batman - batarang que gira
+            case 'batarang_combo':
+                // Batman Combo: Normal -> Ice -> Explosive
+                const types = ['normal', 'ice', 'explosive'];
+                const currentType = types[this.comboIndex % 3];
+                this.comboIndex++;
+
+                let bColor = atk.color;
+                let bDamage = atk.damage;
+                let isExplosive = false;
+                let isIce = false;
+
+                if (currentType === 'ice') {
+                    bColor = '#00ffff';
+                    bDamage = atk.damage * 0.8;
+                    isIce = true;
+                } else if (currentType === 'explosive') {
+                    bColor = '#ff0000';
+                    bDamage = atk.damage * 1.5;
+                    isExplosive = true;
+                }
+
                 bullets.push({
                     x: x, y: y,
                     vx: Math.cos(angle) * atk.speed,
                     vy: Math.sin(angle) * atk.speed,
                     ownerId: ownerId,
-                    damage: atk.damage,
-                    color: atk.color,
+                    damage: bDamage,
+                    color: bColor,
                     size: atk.size,
                     isBatarang: true,
                     spinSpeed: atk.spinSpeed,
-                    spin: 0
+                    spin: 0,
+                    // Propriedades especiais
+                    isIce: isIce,
+                    explosive: isExplosive,
+                    explosionRadius: isExplosive ? 60 : 0
                 });
                 break;
 
